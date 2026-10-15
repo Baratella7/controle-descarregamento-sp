@@ -124,7 +124,7 @@ describe("Filtro por carreta / manifesto", () => {
   });
   it("percentual recalculado e origem desconhecida mantida", () => {
     const c = compareManifestos(sheet, map, ["SP"], {}, DEFAULT_ORIGINS);
-    expect(c.find((m) => m.manifesto === "XX000009")!.origem).toBe("Origem não cadastrada");
+    expect(c.find((m) => m.manifesto === "XX000009")!.origem).toBe("XX");
     expect(c.find((m) => m.manifesto === "XX000009")!.summary.pctGeral).toBe(0);
     expect(originOf("CP273732", DEFAULT_ORIGINS)).toBe("Campinas");
   });

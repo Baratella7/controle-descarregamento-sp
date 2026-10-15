@@ -314,11 +314,11 @@ export const manifestPrefix = (code: string) => (code.trim().toUpperCase().match
 export function originOf(code: string, origins: OriginMap): string {
   const p = manifestPrefix(code);
   if (!p) return UNKNOWN_ORIGIN;
-  // longest registered prefix wins
+  // longest registered prefix wins; otherwise the prefix itself is the origin
   const key = Object.keys(origins)
     .filter((k) => k && p.startsWith(k.toUpperCase()))
     .sort((a, b) => b.length - a.length)[0];
-  return key ? origins[key]! : UNKNOWN_ORIGIN;
+  return key ? origins[key]! : p;
 }
 
 /** Distinct manifest codes among SP records, as they appear (trimmed). */
