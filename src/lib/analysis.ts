@@ -96,7 +96,7 @@ export const normalize = (s: unknown) =>
 const PATTERNS: Record<Field, RegExp[]> = {
   cte: [/^CT-?E$/, /^(N(UM(ERO)?|O|º)?\.? ?)?CT-?E/, /CT-?E/, /CONHEC/],
   destino: [/^TRECHO$/, /TRECHO/, /^(FILIAL )?DEST(INO)?$/, /DEST/, /^FIL(IAL)? ?DEST/],
-  manifesto: [/^MANIF(ESTO)?$/, /MANIF/, /^MDF-?E/],
+  manifesto: [/^MANIF(ESTO)?$/, /^MAN$/, /MANIF/, /^MDF-?E/],
   vols: [/^VOLS$/, /^VOL(UME)?S?( PREVISTOS?)?$/],
   lidos: [/^LIDOS$/, /^(VOL(UME)?S? )?LIDOS?$/],
 };
