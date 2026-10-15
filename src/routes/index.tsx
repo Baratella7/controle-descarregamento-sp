@@ -1,3 +1,4 @@
+import { ManifestBar } from "@/components/app/manifest-bar";
 import { createFileRoute } from "@tanstack/react-router";
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from "recharts";
 import { AlertTriangle, CheckCircle2, CircleSlash, Package, PackageCheck, PackageX, Sigma, TrendingUp } from "lucide-react";
@@ -63,7 +64,7 @@ function Dashboard() {
     <>
       <PageHeader title="Dashboard" subtitle="Somente CT-es com destino SP, consolidados entre manifestos."
         actions={<ExportButton label="Exportar resumo" onExport={(f) => exportSummary(analysis, f)} />} />
-      <PendingWarning count={s.pendentes} />
+      <ManifestBar /><PendingWarning count={s.pendentes} />
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="flex flex-col items-center justify-center rounded-lg border bg-card p-6 shadow-sm lg:row-span-2">

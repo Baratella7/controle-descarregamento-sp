@@ -1,3 +1,4 @@
+import { ManifestBar } from "@/components/app/manifest-bar";
 import { createFileRoute } from "@tanstack/react-router";
 import { useData } from "@/lib/store";
 import { PageHeader } from "@/components/app/shell";
@@ -31,7 +32,7 @@ function Page() {
             <ExportButton label="Sem leitura" onExport={(f) => exportCtes("ctes_sem_leitura", analysis.ctes.filter((c) => c.status === "SEM_LEITURA"), f)} />
           </>
         )} />
-      {analysis ? (<><PendingWarning count={analysis.summary.pendentes} /><CteTable data={analysis.ctes} /></>) : <NoData />}
+      {analysis ? (<><ManifestBar /><PendingWarning count={analysis.summary.pendentes} /><CteTable data={analysis.ctes} /></>) : <NoData />}
     </>
   );
 }

@@ -5,6 +5,7 @@ import { useData } from "@/lib/store";
 
 const NAV = [
   { to: "/", label: "Dashboard", desc: "Visão geral", icon: LayoutDashboard },
+  { to: "/carretas", label: "Por Carreta", desc: "Manifestos e comparativo", icon: Truck },
   { to: "/conferencia", label: "Conferência de CT-es", desc: "Tabela completa", icon: ClipboardList },
   { to: "/divergencias", label: "Divergências", desc: "Faltas e incompletos", icon: AlertTriangle },
   { to: "/auditoria", label: "Auditoria", desc: "Duplicidades", icon: ShieldCheck },
