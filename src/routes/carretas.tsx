@@ -29,7 +29,7 @@ export const Route = createFileRoute("/carretas")({
 });
 
 function Page() {
-  const { analysis, manifesto, originOf, comparison } = useData();
+  const { analysis, prefixo, originOf, comparison } = useData();
   const [sort, setSort] = useState<"pct" | "faltantes" | "manifesto">("pct");
   const sorted = useMemo(() => {
     const l = [...comparison];
@@ -41,9 +41,9 @@ function Page() {
 
   if (!analysis) return (<><PageHeader title="Relatório de Descarregamento por Carreta" /><NoData /><OriginConfig /></>);
   const s = analysis.summary;
-  const label = manifesto ?? "Todas as carretas";
-  const origem = manifesto ? originOf(manifesto) : "Todas";
-  const fname = manifesto ? `manifesto_${manifesto.replace(/[^\w-]/g, "")}` : "todas_carretas";
+  const label = prefixo ? `Origem ${prefixo}` : "Todas as carretas";
+  const origem = prefixo ? originOf(prefixo) : "Todas";
+  const fname = prefixo ? `origem_${prefixo.replace(/[^\w-]/g, "")}` : "todas_carretas";
   const chart = sorted.map((m) => ({ m: m.manifesto, pct: m.summary.pctGeral === null ? 0 : Math.round(m.summary.pctGeral * 100) / 100 }));
 
   return (
@@ -99,7 +99,7 @@ function Page() {
               </thead>
               <tbody>
                 {sorted.map((m) => (
-                  <tr key={m.manifesto} className={cn("border-t", m.manifesto === manifesto && "bg-accent")}>
+                  <tr key={m.manifesto} className={cn("border-t", prefixo !== null && m.manifesto.toUpperCase().startsWith(prefixo) && "bg-accent")}>
                     <td className="px-3 py-2 font-mono text-xs">{m.manifesto}</td>
                     <td className={cn("px-3 py-2 text-xs", m.origem === UNKNOWN_ORIGIN && "text-muted-foreground")}>{m.origem}</td>
                     <td className="px-3 py-2 text-right">{fmtInt(m.summary.ctesUnicos)}</td>

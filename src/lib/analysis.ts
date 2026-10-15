@@ -189,16 +189,22 @@ export function analyze(
   spValues: string[],
   resolutions: Resolutions = {},
   manifesto: string | null = null,
+  prefix: string | null = null,
 ): Analysis {
   const all = buildRecords(sheet, mapping, spValues);
-  const records = manifesto === null ? all : all.filter((r) => r.manifesto === manifesto);
+  // Filter by exact manifest, or by origin prefix (group of manifests). Grouping never sums duplicates:
+  // records of the same CT-e are still consolidated below.
+  const inView = (r: SourceRecord) =>
+    (manifesto === null || r.manifesto === manifesto) && (prefix === null || manifestPrefix(r.manifesto) === prefix);
+  const filtered = manifesto !== null || prefix !== null;
+  const records = filtered ? all.filter(inView) : all;
   const spRecords = records.filter((r) => r.isSP);
   const invalidRecords = records.filter((r) => !r.isSP && !r.destino);
   // For per-manifest view: which other manifests carry the same CT-e (SP only)
   const otherMan = new Map<string, Set<string>>();
-  if (manifesto !== null)
+  if (filtered)
     for (const r of all)
-      if (r.isSP && r.cte && r.manifesto !== manifesto) {
+      if (r.isSP && r.cte && !inView(r)) {
         const s = otherMan.get(r.cte) ?? new Set<string>();
         s.add(r.manifesto || "(sem manifesto)");
         otherMan.set(r.cte, s);
@@ -306,7 +312,7 @@ export function analyze(
 // ---------- Manifests / origins ----------
 
 export type OriginMap = Record<string, string>;
-export const DEFAULT_ORIGINS: OriginMap = { CP: "Campinas" };
+export const DEFAULT_ORIGINS: OriginMap = { CP: "Campinas", RJ: "Rio de Janeiro", ES: "Espírito Santo" };
 export const UNKNOWN_ORIGIN = "Origem não cadastrada";
 
 export const manifestPrefix = (code: string) => (code.trim().toUpperCase().match(/^[A-Z]+/)?.[0] ?? "");
@@ -327,6 +333,11 @@ export function listManifestos(sheet: Sheet, mapping: Mapping, spValues: string[
   const set = new Set<string>();
   for (const r of buildRecords(sheet, mapping, spValues)) if (r.isSP && r.manifesto) set.add(r.manifesto);
   return [...set].sort((a, b) => a.localeCompare(b));
+}
+
+/** Distinct origin prefixes among SP manifests. */
+export function listPrefixes(manifestos: string[]): string[] {
+  return [...new Set(manifestos.map(manifestPrefix).filter(Boolean))].sort((a, b) => a.localeCompare(b));
 }
 
 export interface ManifestRow {
