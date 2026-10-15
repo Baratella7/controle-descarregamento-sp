@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuditoriaRouteImport } from './routes/auditoria'
+import { Route as CarretasRouteImport } from './routes/carretas'
 import { Route as ConferenciaRouteImport } from './routes/conferencia'
 import { Route as DivergenciasRouteImport } from './routes/divergencias'
 import { Route as ImportarRouteImport } from './routes/importar'
@@ -23,6 +24,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuditoriaRoute = AuditoriaRouteImport.update({
   id: '/auditoria',
   path: '/auditoria',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CarretasRoute = CarretasRouteImport.update({
+  id: '/carretas',
+  path: '/carretas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConferenciaRoute = ConferenciaRouteImport.update({
@@ -44,6 +50,7 @@ const ImportarRoute = ImportarRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auditoria': typeof AuditoriaRoute
+  '/carretas': typeof CarretasRoute
   '/conferencia': typeof ConferenciaRoute
   '/divergencias': typeof DivergenciasRoute
   '/importar': typeof ImportarRoute
@@ -51,6 +58,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auditoria': typeof AuditoriaRoute
+  '/carretas': typeof CarretasRoute
   '/conferencia': typeof ConferenciaRoute
   '/divergencias': typeof DivergenciasRoute
   '/importar': typeof ImportarRoute
@@ -59,19 +67,33 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auditoria': typeof AuditoriaRoute
+  '/carretas': typeof CarretasRoute
   '/conferencia': typeof ConferenciaRoute
   '/divergencias': typeof DivergenciasRoute
   '/importar': typeof ImportarRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auditoria' | '/conferencia' | '/divergencias' | '/importar'
+  fullPaths:
+    | '/'
+    | '/auditoria'
+    | '/carretas'
+    | '/conferencia'
+    | '/divergencias'
+    | '/importar'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auditoria' | '/conferencia' | '/divergencias' | '/importar'
+  to:
+    | '/'
+    | '/auditoria'
+    | '/carretas'
+    | '/conferencia'
+    | '/divergencias'
+    | '/importar'
   id:
     | '__root__'
     | '/'
     | '/auditoria'
+    | '/carretas'
     | '/conferencia'
     | '/divergencias'
     | '/importar'
@@ -80,6 +102,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuditoriaRoute: typeof AuditoriaRoute
+  CarretasRoute: typeof CarretasRoute
   ConferenciaRoute: typeof ConferenciaRoute
   DivergenciasRoute: typeof DivergenciasRoute
   ImportarRoute: typeof ImportarRoute
@@ -99,6 +122,13 @@ declare module '@tanstack/react-router' {
       path: '/auditoria'
       fullPath: '/auditoria'
       preLoaderRoute: typeof AuditoriaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/carretas': {
+      id: '/carretas'
+      path: '/carretas'
+      fullPath: '/carretas'
+      preLoaderRoute: typeof CarretasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/conferencia': {
@@ -128,6 +158,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuditoriaRoute: AuditoriaRoute,
+  CarretasRoute: CarretasRoute,
   ConferenciaRoute: ConferenciaRoute,
   DivergenciasRoute: DivergenciasRoute,
   ImportarRoute: ImportarRoute,

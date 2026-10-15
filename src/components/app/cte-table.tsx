@@ -13,6 +13,7 @@ type Sort = "faltantes" | "pct-asc" | "pct-desc" | "cte";
 const PAGE = 25;
 
 export function CteTable({ data, statuses }: { data: CteResult[]; statuses?: Status[] }) {
+  const { originOf } = useData();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<string>("ALL");
   const [sort, setSort] = useState<Sort>("faltantes");
@@ -65,7 +66,8 @@ export function CteTable({ data, statuses }: { data: CteResult[]; statuses?: Sta
           <thead className="bg-muted text-left text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
               <th className="px-3 py-2">CT-e</th>
-              <th className="px-3 py-2">Destino</th>
+              <th className="px-3 py-2">Manifesto</th>
+              <th className="px-3 py-2">Origem</th>
               <th className="px-3 py-2 text-right">Previstos</th>
               <th className="px-3 py-2 text-right">Lidos</th>
               <th className="px-3 py-2 text-right">Faltantes</th>
@@ -78,7 +80,8 @@ export function CteTable({ data, statuses }: { data: CteResult[]; statuses?: Sta
             {slice.map((c) => (
               <tr key={c.cte} className={cn("border-t", c.status !== "COMPLETO" && "bg-destructive/[0.025]", (c.status === "CONFLITO" || c.status === "INVALIDO") && "bg-warning/10")}>
                 <td className="px-3 py-2 font-mono text-xs font-medium">{c.cte}{c.duplicated && <span className="ml-1.5 rounded bg-secondary px-1 text-[10px] text-secondary-foreground">{c.records.length}×</span>}</td>
-                <td className="px-3 py-2">{c.destino}</td>
+                <td className="px-3 py-2 font-mono text-xs">{c.manifestos.join(", ") || "—"}</td>
+                <td className="px-3 py-2 text-xs">{[...new Set(c.manifestos.map(originOf))].join(", ") || "—"}</td>
                 <td className="px-3 py-2 text-right">{fmtInt(c.vols)}</td>
                 <td className="px-3 py-2 text-right">{fmtInt(c.lidos)}</td>
                 <td className={cn("px-3 py-2 text-right font-medium", c.faltantes > 0 && "text-destructive")}>{c.vols === null ? "—" : fmtInt(c.faltantes)}</td>
@@ -90,7 +93,7 @@ export function CteTable({ data, statuses }: { data: CteResult[]; statuses?: Sta
               </tr>
             ))}
             {!slice.length && (
-              <tr><td colSpan={8} className="px-3 py-10 text-center text-muted-foreground">Nenhum CT-e encontrado.</td></tr>
+              <tr><td colSpan={9} className="px-3 py-10 text-center text-muted-foreground">Nenhum CT-e encontrado.</td></tr>
             )}
           </tbody>
         </table>

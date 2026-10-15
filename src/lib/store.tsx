@@ -1,7 +1,7 @@
 // In-memory only store. Operational data is NEVER persisted; refresh discards it.
 // Only non-sensitive settings (SP equivalents) are kept in localStorage.
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { analyze, DEFAULT_SP_VALUES, missingFields, type Analysis, type Mapping, type Resolutions, type Sheet } from "./analysis";
+import { analyze, compareManifestos, DEFAULT_ORIGINS, DEFAULT_SP_VALUES, listManifestos, missingFields, originOf, type Analysis, type ManifestRow, type Mapping, type OriginMap, type Resolutions, type Sheet } from "./analysis";
 
 interface Loaded {
   fileName: string;
@@ -18,7 +18,17 @@ interface Store {
   setSpValues: (v: string[]) => void;
   resolutions: Resolutions;
   resolve: (cte: string, v: { vols: number; lidos: number } | null) => void;
+  /** Analysis for the current view (selected manifest or all). */
   analysis: Analysis | null;
+  /** Consolidated analysis of all manifests. */
+  overall: Analysis | null;
+  manifestos: string[];
+  manifesto: string | null;
+  setManifesto: (m: string | null) => void;
+  origins: OriginMap;
+  setOrigins: (o: OriginMap) => void;
+  originOf: (code: string) => string;
+  comparison: ManifestRow[];
 }
 
 const Ctx = createContext<Store | null>(null);
@@ -28,28 +38,41 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [loaded, setLoadedState] = useState<Loaded | null>(null);
   const [spValues, setSpValuesState] = useState<string[]>(DEFAULT_SP_VALUES);
   const [resolutions, setResolutions] = useState<Resolutions>({});
+  const [manifesto, setManifesto] = useState<string | null>(null);
+  const [origins, setOriginsState] = useState<OriginMap>(DEFAULT_ORIGINS);
 
   useEffect(() => {
     try {
       const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? "null");
       if (Array.isArray(s?.spValues)) setSpValuesState(s.spValues.filter((x: unknown) => typeof x === "string"));
+      if (s?.origins && typeof s.origins === "object")
+        setOriginsState(Object.fromEntries(Object.entries(s.origins).filter(([k, v]) => typeof v === "string" && /^[A-Z]{1,6}$/.test(k))) as OriginMap);
     } catch {
       /* ignore */
     }
   }, []);
 
-  const setSpValues = (v: string[]) => {
-    setSpValuesState(v);
+  const save = (patch: object) => {
     try {
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify({ spValues: v }));
+      const cur = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? "{}") ?? {};
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...cur, ...patch }));
     } catch {
       /* ignore */
     }
+  };
+  const setSpValues = (v: string[]) => {
+    setSpValuesState(v);
+    save({ spValues: v });
+  };
+  const setOrigins = (o: OriginMap) => {
+    setOriginsState(o);
+    save({ origins: o });
   };
 
   const setLoaded = (l: Loaded | null) => {
     setLoadedState(l);
     setResolutions({});
+    setManifesto(null);
   };
 
   const resolve: Store["resolve"] = (cte, v) =>
@@ -60,13 +83,29 @@ export function DataProvider({ children }: { children: ReactNode }) {
       return n;
     });
 
-  const analysis = useMemo(() => {
-    if (!loaded || missingFields(loaded.mapping, loaded.sheet.headers).length) return null;
-    return analyze(loaded.sheet, loaded.mapping, spValues, resolutions);
-  }, [loaded, spValues, resolutions]);
+  const valid = !!loaded && !missingFields(loaded.mapping, loaded.sheet.headers).length;
+  const overall = useMemo(
+    () => (valid ? analyze(loaded!.sheet, loaded!.mapping, spValues, resolutions) : null),
+    [valid, loaded, spValues, resolutions],
+  );
+  const manifestos = useMemo(() => (valid ? listManifestos(loaded!.sheet, loaded!.mapping, spValues) : []), [valid, loaded, spValues]);
+  const current = manifesto !== null && manifestos.includes(manifesto) ? manifesto : null;
+  const analysis = useMemo(
+    () => (valid && current !== null ? analyze(loaded!.sheet, loaded!.mapping, spValues, resolutions, current) : overall),
+    [valid, loaded, spValues, resolutions, current, overall],
+  );
+  const comparison = useMemo(
+    () => (valid ? compareManifestos(loaded!.sheet, loaded!.mapping, spValues, resolutions, origins) : []),
+    [valid, loaded, spValues, resolutions, origins],
+  );
 
   return (
-    <Ctx.Provider value={{ loaded, setLoaded, spValues, setSpValues, resolutions, resolve, analysis }}>
+    <Ctx.Provider
+      value={{
+        loaded, setLoaded, spValues, setSpValues, resolutions, resolve, analysis, overall, manifestos,
+        manifesto: current, setManifesto, origins, setOrigins, originOf: (c) => originOf(c, origins), comparison,
+      }}
+    >
       {children}
     </Ctx.Provider>
   );

@@ -1,3 +1,4 @@
+import { ManifestBar } from "@/components/app/manifest-bar";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useData } from "@/lib/store";
@@ -34,7 +35,7 @@ function Page() {
     <>
       <PageHeader title="Divergências de descarregamento" subtitle="Tudo o que não fechou na conferência dos CT-es SP."
         actions={<ExportButton label="Exportar divergências" onExport={(f) => exportCtes("divergencias", data, f)} />} />
-      <PendingWarning count={s.pendentes} />
+      <ManifestBar /><PendingWarning count={s.pendentes} />
       <div className="mb-4 grid grid-cols-2 gap-4 md:grid-cols-5">
         <StatCard label="Incompletos" value={fmtInt(s.incompletos)} tone="danger" />
         <StatCard label="Sem leitura" value={fmtInt(s.semLeitura)} tone="danger" />

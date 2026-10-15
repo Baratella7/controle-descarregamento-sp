@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analyze, autoMap, matrixToSheet, missingFields, readPct, missing, classify, type Mapping } from "@/lib/analysis";
+import { analyze, autoMap, matrixToSheet, missingFields, readPct, missing, classify, listManifestos, compareManifestos, originOf, DEFAULT_ORIGINS, type Mapping } from "@/lib/analysis";
 import { safeCell } from "@/lib/files";
 
 const H = ["MANIFESTO", "CTE", "FILIAL DESTINO", "VOLS", "LIDOS"];
@@ -95,5 +95,37 @@ describe("Cálculos de conferência", () => {
     expect(safeCell("@SUM(A1)")).toBe("'@SUM(A1)");
     expect(safeCell("ES123")).toBe("ES123");
     expect(safeCell(-5)).toBe(-5);
+  });
+});
+
+describe("Filtro por carreta / manifesto", () => {
+  const sheet = matrixToSheet([H,
+    ["CP273732", "A1", "SP", "10", "8"],
+    ["CP273732", "A1", "SP", "10", "8"],
+    ["CP273732", "B1", "SP", "5", "5"],
+    ["SJ000001", "A1", "SP", "10", "8"],
+    ["XX000009", "C1", "SP", "4", "0"],
+    ["CP273732", "D1", "RJ", "9", "0"],
+  ]);
+  it("três manifestos SP geram três opções", () => {
+    expect(listManifestos(sheet, map, ["SP"])).toEqual(["CP273732", "SJ000001", "XX000009"]);
+  });
+  it("selecionar CP273732 mostra só seus registros SP, sem duplicar", () => {
+    const a = analyze(sheet, map, ["SP"], {}, "CP273732");
+    expect(a.summary.ctesUnicos).toBe(2);
+    expect(a.summary.volsPrevistos).toBe(15);
+    expect(a.summary.volsLidos).toBe(13);
+    expect(a.summary.compartilhados).toBe(1);
+  });
+  it("visão geral não duplica CT-e entre manifestos", () => {
+    const a = analyze(sheet, map, ["SP"]);
+    expect(a.summary.ctesUnicos).toBe(3);
+    expect(a.summary.volsPrevistos).toBe(19);
+  });
+  it("percentual recalculado e origem desconhecida mantida", () => {
+    const c = compareManifestos(sheet, map, ["SP"], {}, DEFAULT_ORIGINS);
+    expect(c.find((m) => m.manifesto === "XX000009")!.origem).toBe("Origem não cadastrada");
+    expect(c.find((m) => m.manifesto === "XX000009")!.summary.pctGeral).toBe(0);
+    expect(originOf("CP273732", DEFAULT_ORIGINS)).toBe("Campinas");
   });
 });
