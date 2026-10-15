@@ -116,7 +116,7 @@ export function autoMap(headers: string[]): AutoMapResult {
       if (found.length) break; // most specific pattern wins
     }
     candidates[f] = found;
-    mapping[f] = found.length === 1 ? found[0] : null;
+    mapping[f] = found.length === 1 ? found[0]! : null;
   });
   return { mapping, candidates };
 }
@@ -221,15 +221,15 @@ export function analyze(
       status = "CONFLITO";
       issues.push(`${pairs.size} combinações diferentes de VOLS/LIDOS entre ${recs.length} registros`);
     } else {
-      vols = valid[0].vols!;
-      lidos = valid[0].lidos!;
+      vols = valid[0]!.vols!;
+      lidos = valid[0]!.lidos!;
       status = classify(vols, lidos);
     }
     if (status === "EXCEDENTE") issues.push("Anomalia: leitura acima do previsto");
 
     ctes.push({
       cte,
-      destino: recs[0].destino,
+      destino: recs[0]!.destino,
       manifestos,
       records: recs,
       vols,
@@ -298,7 +298,7 @@ export function matrixToSheet(matrix: unknown[][]): Sheet {
       headerIdx = i;
     }
   }
-  const raw = rows[headerIdx] ?? [];
+  const raw: string[] = rows[headerIdx] ?? [];
   const seen = new Map<string, number>();
   const headers = raw.map((h, i) => {
     let name = h.trim() || `Coluna ${i + 1}`;

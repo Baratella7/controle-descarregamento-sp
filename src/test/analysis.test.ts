@@ -9,17 +9,17 @@ const run = (rows: string[][]) => analyze(matrixToSheet([H, ...rows]), map, ["SP
 describe("Cálculos de conferência", () => {
   it("T1: 15 previstos / 14 lidos → 1 faltante, 93,33%", () => {
     const a = run([["001", "ES3671232E", "SP", "15", "14"]]);
-    expect(a.ctes[0].faltantes).toBe(1);
-    expect(a.ctes[0].pct!.toFixed(2)).toBe("93.33");
-    expect(a.ctes[0].status).toBe("INCOMPLETO");
+    expect(a.ctes[0]!.faltantes).toBe(1);
+    expect(a.ctes[0]!.pct!.toFixed(2)).toBe("93.33");
+    expect(a.ctes[0]!.status).toBe("INCOMPLETO");
   });
   it("T2: 10/10 → completo, 100%", () => {
-    const c = run([["001", "A1", "SP", "10", "10"]]).ctes[0];
+    const c = run([["001", "A1", "SP", "10", "10"]]).ctes[0]!;
     expect(c.status).toBe("COMPLETO");
     expect(c.pct).toBe(100);
   });
   it("T3: 8/0 → sem leitura, 8 faltantes", () => {
-    const c = run([["001", "A1", "SP", "8", "0"]]).ctes[0];
+    const c = run([["001", "A1", "SP", "8", "0"]]).ctes[0]!;
     expect(c.status).toBe("SEM_LEITURA");
     expect(c.faltantes).toBe(8);
   });
@@ -39,14 +39,14 @@ describe("Cálculos de conferência", () => {
       ["001", "X1", "SP", "15", "14"],
       ["002", "X1", "SP", "15", "12"],
     ]);
-    expect(a.ctes[0].status).toBe("CONFLITO");
+    expect(a.ctes[0]!.status).toBe("CONFLITO");
     expect(a.summary.volsPrevistos).toBe(0);
     expect(a.summary.definitivo).toBe(false);
   });
   it("T5b: conflito resolvido manualmente entra nos totais", () => {
     const sheet = matrixToSheet([H, ["001", "X1", "SP", "15", "14"], ["002", "X1", "SP", "15", "12"]]);
     const a = analyze(sheet, map, ["SP"], { X1: { vols: 15, lidos: 14 } });
-    expect(a.ctes[0].status).toBe("INCOMPLETO");
+    expect(a.ctes[0]!.status).toBe("INCOMPLETO");
     expect(a.summary.volsFaltantes).toBe(1);
   });
   it("T6: destino RJ é excluído (prefixo SP não importa)", () => {
@@ -62,7 +62,7 @@ describe("Cálculos de conferência", () => {
     expect(a.summary.ctesUnicos).toBe(2);
   });
   it("T8: 10/12 → leitura excedente, % não limitado", () => {
-    const c = run([["001", "A1", "SP", "10", "12"]]).ctes[0];
+    const c = run([["001", "A1", "SP", "10", "12"]]).ctes[0]!;
     expect(c.status).toBe("EXCEDENTE");
     expect(c.pct).toBe(120);
   });
@@ -73,11 +73,11 @@ describe("Cálculos de conferência", () => {
   });
   it("T10: preserva letras e zeros à esquerda", () => {
     const a = run([["001", "00012345AB", "SP", "3", "3"]]);
-    expect(a.ctes[0].cte).toBe("00012345AB");
+    expect(a.ctes[0]!.cte).toBe("00012345AB");
   });
   it("dados inválidos não são completos", () => {
     const a = run([["001", "A1", "SP", "-1", "abc"]]);
-    expect(a.ctes[0].status).toBe("INVALIDO");
+    expect(a.ctes[0]!.status).toBe("INVALIDO");
     expect(a.summary.completos).toBe(0);
   });
   it("percentual geral e funções base", () => {

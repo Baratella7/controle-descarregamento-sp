@@ -43,6 +43,7 @@ export async function readWorkbook(file: File): Promise<Workbook> {
     sheetNames: wb.SheetNames,
     getSheet: (name) => {
       const ws = wb.Sheets[name];
+      if (!ws) throw new FileError("Aba não encontrada.");
       const matrix = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, raw: false, defval: "", blankrows: false });
       return matrixToSheet(matrix);
     },

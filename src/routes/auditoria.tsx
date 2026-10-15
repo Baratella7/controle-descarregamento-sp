@@ -77,7 +77,7 @@ const Section = ({ title, children }: { title: string; children: React.ReactNode
     <div className="max-h-96 divide-y overflow-y-auto">{children}</div>
   </div>
 );
-const Row = ({ left, right, onClick }: { left: React.ReactNode; right?: string; onClick?: () => void }) => (
+const Row = ({ left, right, onClick }: { left: React.ReactNode; right?: string | undefined; onClick?: () => void }) => (
   <div className="flex flex-col gap-1 px-4 py-2 sm:flex-row sm:items-center sm:justify-between">
     <div className="flex items-center gap-2">{left}</div>
     <div className="flex items-center gap-2 text-xs text-muted-foreground">

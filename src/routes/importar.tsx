@@ -63,7 +63,7 @@ function Page() {
       const w = await readWorkbook(f);
       setProgress(70);
       setWb(w);
-      loadSheet(w, w.sheetNames[0]);
+      loadSheet(w, w.sheetNames[0]!);
       setProgress(100);
     } catch (e) {
       setProgress(0);
@@ -79,7 +79,7 @@ function Page() {
   const confirm = () => {
     if (!file || !sheet || !mapping || missing.length) return;
     const values = sp.split(/[,;\n]/).map((v) => v.trim()).filter(Boolean).slice(0, 20);
-    if (!values.length) return toast.error("Informe ao menos um valor de destino equivalente a SP.");
+    if (!values.length) { toast.error("Informe ao menos um valor de destino equivalente a SP."); return; }
     setSpValues(values);
     setLoaded({ fileName: file.name, fileSize: file.size, sheetName, sheet, mapping });
     toast.success("Análise concluída.");
