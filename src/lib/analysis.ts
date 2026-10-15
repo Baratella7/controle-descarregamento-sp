@@ -289,7 +289,7 @@ export function matrixToSheet(matrix: unknown[][]): Sheet {
   let headerIdx = 0;
   let best = -1;
   for (let i = 0; i < Math.min(rows.length, 30); i++) {
-    const cells = rows[i].filter((c) => c.trim() !== "");
+    const cells = rows[i]!.filter((c) => c.trim() !== "");
     if (cells.length < 2) continue;
     const { candidates } = autoMap(cells);
     const score = REQUIRED_FIELDS.filter((f) => candidates[f].length).length * 10 + cells.length * 0.01;
