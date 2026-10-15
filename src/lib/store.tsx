@@ -1,7 +1,7 @@
 // In-memory only store. Operational data is NEVER persisted; refresh discards it.
 // Only non-sensitive settings (SP equivalents) are kept in localStorage.
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { analyze, compareManifestos, DEFAULT_ORIGINS, DEFAULT_SP_VALUES, listManifestos, missingFields, originOf, type Analysis, type ManifestRow, type Mapping, type OriginMap, type Resolutions, type Sheet } from "./analysis";
+import { analyze, compareManifestos, DEFAULT_ORIGINS, DEFAULT_SP_VALUES, listManifestos, listPrefixes, missingFields, originOf, type Analysis, type ManifestRow, type Mapping, type OriginMap, type Resolutions, type Sheet } from "./analysis";
 
 interface Loaded {
   fileName: string;
@@ -23,8 +23,11 @@ interface Store {
   /** Consolidated analysis of all manifests. */
   overall: Analysis | null;
   manifestos: string[];
-  manifesto: string | null;
-  setManifesto: (m: string | null) => void;
+  /** Origin prefixes available (e.g. CP, RJ). */
+  prefixes: string[];
+  /** Selected origin prefix (group of manifests), or null for all. */
+  prefixo: string | null;
+  setPrefixo: (p: string | null) => void;
   origins: OriginMap;
   setOrigins: (o: OriginMap) => void;
   originOf: (code: string) => string;
@@ -38,7 +41,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [loaded, setLoadedState] = useState<Loaded | null>(null);
   const [spValues, setSpValuesState] = useState<string[]>(DEFAULT_SP_VALUES);
   const [resolutions, setResolutions] = useState<Resolutions>({});
-  const [manifesto, setManifesto] = useState<string | null>(null);
+  const [prefixo, setPrefixo] = useState<string | null>(null);
   const [origins, setOriginsState] = useState<OriginMap>(DEFAULT_ORIGINS);
 
   useEffect(() => {
@@ -72,7 +75,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const setLoaded = (l: Loaded | null) => {
     setLoadedState(l);
     setResolutions({});
-    setManifesto(null);
+    setPrefixo(null);
   };
 
   const resolve: Store["resolve"] = (cte, v) =>
@@ -89,9 +92,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [valid, loaded, spValues, resolutions],
   );
   const manifestos = useMemo(() => (valid ? listManifestos(loaded!.sheet, loaded!.mapping, spValues) : []), [valid, loaded, spValues]);
-  const current = manifesto !== null && manifestos.includes(manifesto) ? manifesto : null;
+  const prefixes = useMemo(() => listPrefixes(manifestos), [manifestos]);
+  const current = prefixo !== null && prefixes.includes(prefixo) ? prefixo : null;
   const analysis = useMemo(
-    () => (valid && current !== null ? analyze(loaded!.sheet, loaded!.mapping, spValues, resolutions, current) : overall),
+    () => (valid && current !== null ? analyze(loaded!.sheet, loaded!.mapping, spValues, resolutions, null, current) : overall),
     [valid, loaded, spValues, resolutions, current, overall],
   );
   const comparison = useMemo(
@@ -103,7 +107,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     <Ctx.Provider
       value={{
         loaded, setLoaded, spValues, setSpValues, resolutions, resolve, analysis, overall, manifestos,
-        manifesto: current, setManifesto, origins, setOrigins, originOf: (c) => originOf(c, origins), comparison,
+        prefixes, prefixo: current, setPrefixo, origins, setOrigins, originOf: (c) => originOf(c, origins), comparison,
       }}
     >
       {children}
