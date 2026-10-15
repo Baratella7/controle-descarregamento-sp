@@ -1,4 +1,4 @@
-import { STATUS_LABELS, type Analysis, type CteResult } from "./analysis";
+import { STATUS_LABELS, type Analysis, type CteResult, type ManifestRow } from "./analysis";
 import { exportRows } from "./files";
 
 const stamp = () => new Date().toISOString().slice(0, 10);
@@ -54,4 +54,26 @@ export function exportInconsistencies(a: Analysis, f: "xlsx" | "csv") {
     );
   a.invalidRecords.forEach((r) => rows.push([r.cte, "Registro inválido", r.line, r.manifesto, r.destino, r.vols ?? "", r.lidos ?? "", r.errors.join(", ")]));
   exportRows(`inconsistencias_${stamp()}`, ["CT-e", "Situação", "Linha", "Manifesto", "Destino", "VOLS", "LIDOS", "Erros"], rows, f);
+}
+
+const pct2 = (n: number | null) => (n !== null ? Math.round(n * 100) / 100 : "");
+
+/** Full report of one manifest (or all): header block + detailed CT-e table. */
+export function exportManifestReport(name: string, label: string, origem: string, a: Analysis, list: CteResult[], originOf: (m: string) => string, f: "xlsx" | "csv") {
+  const s = a.summary;
+  const head: unknown[][] = [
+    ["Manifesto", label], ["Origem", origem], ["Destino", "SP"], ["CT-es únicos", s.ctesUnicos],
+    ["Volumes previstos", s.volsPrevistos], ["Volumes lidos", s.volsLidos], ["Volumes faltantes", s.volsFaltantes],
+    ["% leitura", pct2(s.pctGeral)], ["CT-es incompletos", s.incompletos], ["Pendências", s.pendentes],
+    ["CT-es compartilhados com outras carretas", s.compartilhados], ["Resultado", s.definitivo ? "Definitivo" : "Prévia (há pendências)"], [],
+    ["CT-e", "Manifesto", "Origem", "Vols previstos", "Vols lidos", "Vols faltantes", "% leitura", "Status", "Observações"],
+  ];
+  const body = list.map((c) => [c.cte, c.manifestos.join(", "), [...new Set(c.manifestos.map(originOf))].join(", "), c.vols ?? "", c.lidos ?? "", c.vols !== null ? c.faltantes : "", pct2(c.pct), STATUS_LABELS[c.status], c.issues.join(" | ")]);
+  const rows = [...head.slice(1), ...body];
+  exportRows(`${name}_${stamp()}`, head[0]!.map(String), rows, f);
+}
+
+export function exportComparison(list: ManifestRow[], f: "xlsx" | "csv") {
+  exportRows(`comparativo_carretas_${stamp()}`, ["Manifesto", "Origem", "Destino", "CT-es", "Vols previstos", "Vols lidos", "Vols faltantes", "% leitura", "CT-es incompletos", "Pendências", "CT-es compartilhados"],
+    list.map((m) => [m.manifesto, m.origem, "SP", m.summary.ctesUnicos, m.summary.volsPrevistos, m.summary.volsLidos, m.summary.volsFaltantes, pct2(m.summary.pctGeral), m.summary.incompletos, m.summary.pendentes, m.summary.compartilhados]), f);
 }
