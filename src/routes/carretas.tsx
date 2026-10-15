@@ -146,7 +146,7 @@ function OriginConfig() {
   return (
     <div className="mt-10 rounded-lg border bg-card p-5 shadow-sm">
       <h2 className="text-lg font-semibold">Origens por prefixo de manifesto</h2>
-      <p className="mb-4 text-xs text-muted-foreground">Ex.: CP273732 → prefixo CP → Campinas. Prefixos não cadastrados aparecem como “Origem não cadastrada”.</p>
+      <p className="mb-4 text-xs text-muted-foreground">A origem é o começo do manifesto (ex.: CP273732 → CP). Cadastre aqui só para mostrar o nome da cidade no lugar do prefixo (ex.: CP → Campinas).</p>
       <div className="mb-4 flex flex-wrap gap-2">
         {Object.entries(origins).map(([k, v]) => (
           <span key={k} className="inline-flex items-center gap-2 rounded-md border bg-secondary px-2.5 py-1 text-sm text-secondary-foreground">
