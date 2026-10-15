@@ -5,7 +5,7 @@ export type Mapping = Record<Field, string | null>;
 
 export const FIELD_LABELS: Record<Field, string> = {
   cte: "Código do CT-e",
-  destino: "Filial de destino",
+  destino: "Trecho (destino após a barra)",
   manifesto: "Manifesto",
   vols: "VOLS (previstos)",
   lidos: "LIDOS (lidos)",
@@ -95,7 +95,7 @@ export const normalize = (s: unknown) =>
 
 const PATTERNS: Record<Field, RegExp[]> = {
   cte: [/^CT-?E$/, /^(N(UM(ERO)?|O|º)?\.? ?)?CT-?E/, /CT-?E/, /CONHEC/],
-  destino: [/^(FILIAL )?DEST(INO)?$/, /DEST/, /^FIL(IAL)? ?DEST/],
+  destino: [/^TRECHO$/, /TRECHO/, /^(FILIAL )?DEST(INO)?$/, /DEST/, /^FIL(IAL)? ?DEST/],
   manifesto: [/^MANIF(ESTO)?$/, /MANIF/, /^MDF-?E/],
   vols: [/^VOLS$/, /^VOL(UME)?S?( PREVISTOS?)?$/],
   lidos: [/^LIDOS$/, /^(VOL(UME)?S? )?LIDOS?$/],
@@ -137,13 +137,19 @@ export function parseVolume(v: unknown): number | null {
   return Number(s);
 }
 
-export const DEFAULT_SP_VALUES = ["SP", "SAO PAULO", "SÃO PAULO"];
+export const DEFAULT_SP_VALUES = ["SAO", "SP", "SAO PAULO", "SÃO PAULO"];
+
+/** Extracts the destination from a route like "CPQ/SAO" (last segment). Plain values pass through. */
+export function destinoFromTrecho(v: unknown): string {
+  const parts = String(v ?? "").split(/[/\\>]|\s-\s/).map((p) => p.trim()).filter(Boolean);
+  return parts.length ? parts[parts.length - 1]! : "";
+}
 
 export function buildRecords(sheet: Sheet, mapping: Mapping, spValues: string[]): SourceRecord[] {
   const sp = new Set(spValues.map(normalize).filter(Boolean));
   return sheet.rows.map((row, i) => {
     const cte = String(row[mapping.cte!] ?? "").trim();
-    const destino = String(row[mapping.destino!] ?? "").trim();
+    const destino = destinoFromTrecho(row[mapping.destino!]);
     const manifesto = mapping.manifesto ? String(row[mapping.manifesto] ?? "").trim() : "";
     const vols = parseVolume(row[mapping.vols!]);
     const lidos = parseVolume(row[mapping.lidos!]);
