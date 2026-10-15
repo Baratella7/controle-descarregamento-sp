@@ -77,6 +77,8 @@ export interface Summary {
   volsFaltantes: number;
   pctGeral: number | null;
   definitivo: boolean;
+  /** CT-es of this view that also appear in other manifests (only set in per-manifest view). */
+  compartilhados: number;
 }
 
 export interface Analysis {
@@ -186,10 +188,21 @@ export function analyze(
   mapping: Mapping,
   spValues: string[],
   resolutions: Resolutions = {},
+  manifesto: string | null = null,
 ): Analysis {
-  const records = buildRecords(sheet, mapping, spValues);
+  const all = buildRecords(sheet, mapping, spValues);
+  const records = manifesto === null ? all : all.filter((r) => r.manifesto === manifesto);
   const spRecords = records.filter((r) => r.isSP);
   const invalidRecords = records.filter((r) => !r.isSP && !r.destino);
+  // For per-manifest view: which other manifests carry the same CT-e (SP only)
+  const otherMan = new Map<string, Set<string>>();
+  if (manifesto !== null)
+    for (const r of all)
+      if (r.isSP && r.cte && r.manifesto !== manifesto) {
+        const s = otherMan.get(r.cte) ?? new Set<string>();
+        s.add(r.manifesto || "(sem manifesto)");
+        otherMan.set(r.cte, s);
+      }
   const groups = new Map<string, SourceRecord[]>();
   for (const r of spRecords) {
     if (!r.cte) {
@@ -232,6 +245,8 @@ export function analyze(
       status = classify(vols, lidos);
     }
     if (status === "EXCEDENTE") issues.push("Anomalia: leitura acima do previsto");
+    const others = otherMan.get(cte);
+    if (others) issues.push(`Também presente em: ${[...others].join(", ")} — leitura pode não ser exclusiva desta carreta`);
 
     ctes.push({
       cte,
@@ -283,8 +298,49 @@ export function analyze(
       volsFaltantes,
       pctGeral: readPct(volsPrevistos, volsLidos),
       definitivo: pendentes === 0,
+      compartilhados: ctes.filter((c) => otherMan.has(c.cte)).length,
     },
   };
+}
+
+// ---------- Manifests / origins ----------
+
+export type OriginMap = Record<string, string>;
+export const DEFAULT_ORIGINS: OriginMap = { CP: "Campinas" };
+export const UNKNOWN_ORIGIN = "Origem não cadastrada";
+
+export const manifestPrefix = (code: string) => (code.trim().toUpperCase().match(/^[A-Z]+/)?.[0] ?? "");
+
+export function originOf(code: string, origins: OriginMap): string {
+  const p = manifestPrefix(code);
+  if (!p) return UNKNOWN_ORIGIN;
+  // longest registered prefix wins
+  const key = Object.keys(origins)
+    .filter((k) => k && p.startsWith(k.toUpperCase()))
+    .sort((a, b) => b.length - a.length)[0];
+  return key ? origins[key]! : UNKNOWN_ORIGIN;
+}
+
+/** Distinct manifest codes among SP records, as they appear (trimmed). */
+export function listManifestos(sheet: Sheet, mapping: Mapping, spValues: string[]): string[] {
+  if (!mapping.manifesto) return [];
+  const set = new Set<string>();
+  for (const r of buildRecords(sheet, mapping, spValues)) if (r.isSP && r.manifesto) set.add(r.manifesto);
+  return [...set].sort((a, b) => a.localeCompare(b));
+}
+
+export interface ManifestRow {
+  manifesto: string;
+  origem: string;
+  summary: Summary;
+}
+
+export function compareManifestos(sheet: Sheet, mapping: Mapping, spValues: string[], resolutions: Resolutions, origins: OriginMap): ManifestRow[] {
+  return listManifestos(sheet, mapping, spValues).map((m) => ({
+    manifesto: m,
+    origem: originOf(m, origins),
+    summary: analyze(sheet, mapping, spValues, resolutions, m).summary,
+  }));
 }
 
 // ---------- Table extraction ----------
