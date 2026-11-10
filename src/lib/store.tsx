@@ -80,9 +80,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const resolve: Store["resolve"] = (cte, v) =>
     setResolutions((r) => {
+      if (v) return { ...r, [cte]: v };
       const n = { ...r };
-      if (v) n[cte] = v;
-      else delete n[cte];
+      delete n[cte];
       return n;
     });
 

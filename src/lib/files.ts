@@ -24,9 +24,22 @@ export interface Workbook {
 export async function readWorkbook(file: File): Promise<Workbook> {
   validateFile(file);
   if (/\.csv$/i.test(file.name)) {
-    const text = await file.text();
-    const parsed = Papa.parse<string[]>(text, { skipEmptyLines: "greedy", dynamicTyping: false });
-    const sheet = matrixToSheet(parsed.data);
+    const text = (await file.text()).replace(/^\uFEFF/, "");
+    const matrix: string[][] = [];
+    const rowNumbers: number[] = [];
+    let line = 1;
+    let cursor = 0;
+    Papa.parse<string[]>(text, {
+      skipEmptyLines: false,
+      dynamicTyping: false,
+      step: (result) => {
+        matrix.push(result.data);
+        rowNumbers.push(line);
+        line += (text.slice(cursor, result.meta.cursor).match(/\r\n|\r|\n/g) ?? []).length;
+        cursor = result.meta.cursor;
+      },
+    });
+    const sheet = matrixToSheet(matrix, rowNumbers);
     return { kind: "csv", sheetNames: ["CSV"], getSheet: () => sheet };
   }
   const buf = await file.arrayBuffer();
@@ -44,8 +57,17 @@ export async function readWorkbook(file: File): Promise<Workbook> {
     getSheet: (name) => {
       const ws = wb.Sheets[name];
       if (!ws) throw new FileError("Aba não encontrada.");
-      const matrix = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, raw: false, defval: "", blankrows: false });
-      return matrixToSheet(matrix);
+      const matrix = XLSX.utils.sheet_to_json<unknown[]>(ws, {
+        header: 1,
+        raw: false,
+        defval: "",
+        blankrows: true,
+      });
+      const firstRow = ws["!ref"] ? XLSX.utils.decode_range(ws["!ref"]).s.r + 1 : 1;
+      return matrixToSheet(
+        matrix,
+        matrix.map((_, i) => firstRow + i),
+      );
     },
   };
 }
