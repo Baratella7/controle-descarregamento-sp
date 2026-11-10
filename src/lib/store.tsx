@@ -1,40 +1,21 @@
 // In-memory only store. Operational data is NEVER persisted; refresh discards it.
 // Only non-sensitive settings (SP equivalents) are kept in localStorage.
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { analyze, compareManifestos, DEFAULT_ORIGINS, DEFAULT_SP_VALUES, listManifestos, listPrefixes, missingFields, originOf, type Analysis, type ManifestRow, type Mapping, type OriginMap, type Resolutions, type Sheet } from "./analysis";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  analyze,
+  compareManifestos,
+  DEFAULT_ORIGINS,
+  DEFAULT_SP_VALUES,
+  listManifestos,
+  listPrefixes,
+  missingFields,
+  originOf,
+  type OriginMap,
+  type Resolutions,
+} from "./analysis";
 
-interface Loaded {
-  fileName: string;
-  fileSize: number;
-  sheetName: string;
-  sheet: Sheet;
-  mapping: Mapping;
-}
+import { Ctx, type Loaded, type Store } from "./data-context";
 
-interface Store {
-  loaded: Loaded | null;
-  setLoaded: (l: Loaded | null) => void;
-  spValues: string[];
-  setSpValues: (v: string[]) => void;
-  resolutions: Resolutions;
-  resolve: (cte: string, v: { vols: number; lidos: number } | null) => void;
-  /** Analysis for the current view (selected manifest or all). */
-  analysis: Analysis | null;
-  /** Consolidated analysis of all manifests. */
-  overall: Analysis | null;
-  manifestos: string[];
-  /** Origin prefixes available (e.g. CP, RJ). */
-  prefixes: string[];
-  /** Selected origin prefix (group of manifests), or null for all. */
-  prefixo: string | null;
-  setPrefixo: (p: string | null) => void;
-  origins: OriginMap;
-  setOrigins: (o: OriginMap) => void;
-  originOf: (code: string) => string;
-  comparison: ManifestRow[];
-}
-
-const Ctx = createContext<Store | null>(null);
 const SETTINGS_KEY = "cd-sp:settings";
 
 export function DataProvider({ children }: { children: ReactNode }) {
@@ -47,9 +28,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? "null");
-      if (Array.isArray(s?.spValues)) setSpValuesState(s.spValues.filter((x: unknown) => typeof x === "string"));
+      if (Array.isArray(s?.spValues))
+        setSpValuesState(s.spValues.filter((x: unknown) => typeof x === "string"));
       if (s?.origins && typeof s.origins === "object")
-        setOriginsState(Object.fromEntries(Object.entries(s.origins).filter(([k, v]) => typeof v === "string" && /^[A-Z]{1,6}$/.test(k))) as OriginMap);
+        setOriginsState(
+          Object.fromEntries(
+            Object.entries(s.origins).filter(
+              ([k, v]) => typeof v === "string" && /^[A-Z]{1,6}$/.test(k),
+            ),
+          ) as OriginMap,
+        );
     } catch {
       /* ignore */
     }
@@ -91,32 +79,49 @@ export function DataProvider({ children }: { children: ReactNode }) {
     () => (valid ? analyze(loaded!.sheet, loaded!.mapping, spValues, resolutions) : null),
     [valid, loaded, spValues, resolutions],
   );
-  const manifestos = useMemo(() => (valid ? listManifestos(loaded!.sheet, loaded!.mapping, spValues) : []), [valid, loaded, spValues]);
+  const manifestos = useMemo(
+    () => (valid ? listManifestos(loaded!.sheet, loaded!.mapping, spValues) : []),
+    [valid, loaded, spValues],
+  );
   const prefixes = useMemo(() => listPrefixes(manifestos), [manifestos]);
   const current = prefixo !== null && prefixes.includes(prefixo) ? prefixo : null;
   const analysis = useMemo(
-    () => (valid && current !== null ? analyze(loaded!.sheet, loaded!.mapping, spValues, resolutions, null, current) : overall),
+    () =>
+      valid && current !== null
+        ? analyze(loaded!.sheet, loaded!.mapping, spValues, resolutions, null, current)
+        : overall,
     [valid, loaded, spValues, resolutions, current, overall],
   );
   const comparison = useMemo(
-    () => (valid ? compareManifestos(loaded!.sheet, loaded!.mapping, spValues, resolutions, origins) : []),
+    () =>
+      valid
+        ? compareManifestos(loaded!.sheet, loaded!.mapping, spValues, resolutions, origins)
+        : [],
     [valid, loaded, spValues, resolutions, origins],
   );
 
   return (
     <Ctx.Provider
       value={{
-        loaded, setLoaded, spValues, setSpValues, resolutions, resolve, analysis, overall, manifestos,
-        prefixes, prefixo: current, setPrefixo, origins, setOrigins, originOf: (c) => originOf(c, origins), comparison,
+        loaded,
+        setLoaded,
+        spValues,
+        setSpValues,
+        resolutions,
+        resolve,
+        analysis,
+        overall,
+        manifestos,
+        prefixes,
+        prefixo: current,
+        setPrefixo,
+        origins,
+        setOrigins,
+        originOf: (c) => originOf(c, origins),
+        comparison,
       }}
     >
       {children}
     </Ctx.Provider>
   );
-}
-
-export function useData() {
-  const c = useContext(Ctx);
-  if (!c) throw new Error("DataProvider ausente");
-  return c;
 }

@@ -1,12 +1,25 @@
 import { Link } from "@tanstack/react-router";
-import { LayoutDashboard, ClipboardList, AlertTriangle, ShieldCheck, Upload, Truck, Lock } from "lucide-react";
+import {
+  LayoutDashboard,
+  ClipboardList,
+  AlertTriangle,
+  ShieldCheck,
+  Upload,
+  Truck,
+  Lock,
+} from "lucide-react";
 import type { ReactNode } from "react";
-import { useData } from "@/lib/store";
+import { useData } from "@/lib/data-context";
 
 const NAV = [
   { to: "/", label: "Dashboard", desc: "Visão geral", icon: LayoutDashboard },
   { to: "/carretas", label: "Por Carreta", desc: "Manifestos e comparativo", icon: Truck },
-  { to: "/conferencia", label: "Conferência de CT-es", desc: "Tabela completa", icon: ClipboardList },
+  {
+    to: "/conferencia",
+    label: "Conferência de CT-es",
+    desc: "Tabela completa",
+    icon: ClipboardList,
+  },
   { to: "/divergencias", label: "Divergências", desc: "Faltas e incompletos", icon: AlertTriangle },
   { to: "/auditoria", label: "Auditoria", desc: "Duplicidades", icon: ShieldCheck },
   { to: "/importar", label: "Importar Planilha", desc: "Excel e CSV", icon: Upload },
@@ -22,7 +35,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Truck className="size-5" />
           </div>
           <div className="leading-tight">
-            <div className="text-xs uppercase tracking-[0.18em] text-sidebar-foreground/60">Controle de</div>
+            <div className="text-xs uppercase tracking-[0.18em] text-sidebar-foreground/60">
+              Controle de
+            </div>
             <div className="font-semibold text-sidebar-accent-foreground">Descarregamento — SP</div>
           </div>
         </div>
@@ -53,7 +68,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className="lg:hidden sticky top-0 z-20 bg-sidebar text-sidebar-foreground">
         <div className="flex items-center gap-2 px-4 py-3">
           <Truck className="size-5 text-sidebar-primary" />
-          <span className="font-semibold text-sidebar-accent-foreground text-sm">Controle de Descarregamento — SP</span>
+          <span className="font-semibold text-sidebar-accent-foreground text-sm">
+            Controle de Descarregamento — SP
+          </span>
         </div>
         <nav className="flex gap-1 overflow-x-auto px-2 pb-2">
           {NAV.map((n) => (
@@ -73,7 +90,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className="flex-1 min-w-0">
         {loaded && (
           <div className="border-b bg-card px-4 py-2 text-xs text-muted-foreground lg:px-8">
-            Arquivo em análise: <span className="font-medium text-foreground">{loaded.fileName}</span> · aba{" "}
+            Arquivo em análise:{" "}
+            <span className="font-medium text-foreground">{loaded.fileName}</span> · aba{" "}
             {loaded.sheetName} · {loaded.sheet.rows.length.toLocaleString("pt-BR")} linhas
           </div>
         )}
@@ -83,7 +101,15 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 }
 
-export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: ReactNode }) {
+export function PageHeader({
+  title,
+  subtitle,
+  actions,
+}: {
+  title: string;
+  subtitle?: string;
+  actions?: ReactNode;
+}) {
   return (
     <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>

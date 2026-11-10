@@ -1,9 +1,28 @@
 import { describe, expect, it } from "vitest";
-import { analyze, autoMap, matrixToSheet, missingFields, readPct, missing, classify, listManifestos, compareManifestos, originOf, DEFAULT_ORIGINS, type Mapping } from "@/lib/analysis";
+import {
+  analyze,
+  autoMap,
+  matrixToSheet,
+  missingFields,
+  readPct,
+  missing,
+  classify,
+  listManifestos,
+  compareManifestos,
+  originOf,
+  DEFAULT_ORIGINS,
+  type Mapping,
+} from "@/lib/analysis";
 import { safeCell } from "@/lib/files";
 
 const H = ["MANIFESTO", "CTE", "FILIAL DESTINO", "VOLS", "LIDOS"];
-const map: Mapping = { manifesto: "MANIFESTO", cte: "CTE", destino: "FILIAL DESTINO", vols: "VOLS", lidos: "LIDOS" };
+const map: Mapping = {
+  manifesto: "MANIFESTO",
+  cte: "CTE",
+  destino: "FILIAL DESTINO",
+  vols: "VOLS",
+  lidos: "LIDOS",
+};
 const run = (rows: string[][]) => analyze(matrixToSheet([H, ...rows]), map, ["SP"]);
 
 describe("Cálculos de conferência", () => {
@@ -44,7 +63,11 @@ describe("Cálculos de conferência", () => {
     expect(a.summary.definitivo).toBe(false);
   });
   it("T5b: conflito resolvido manualmente entra nos totais", () => {
-    const sheet = matrixToSheet([H, ["001", "X1", "SP", "15", "14"], ["002", "X1", "SP", "15", "12"]]);
+    const sheet = matrixToSheet([
+      H,
+      ["001", "X1", "SP", "15", "14"],
+      ["002", "X1", "SP", "15", "12"],
+    ]);
     const a = analyze(sheet, map, ["SP"], { X1: { vols: 15, lidos: 14 } });
     expect(a.ctes[0]!.status).toBe("INCOMPLETO");
     expect(a.summary.volsFaltantes).toBe(1);
@@ -91,7 +114,7 @@ describe("Cálculos de conferência", () => {
     expect(s.rows).toHaveLength(1);
   });
   it("exportação neutraliza fórmulas", () => {
-    expect(safeCell("=HYPERLINK(\"x\")")).toBe("'=HYPERLINK(\"x\")");
+    expect(safeCell('=HYPERLINK("x")')).toBe('\'=HYPERLINK("x")');
     expect(safeCell("@SUM(A1)")).toBe("'@SUM(A1)");
     expect(safeCell("ES123")).toBe("ES123");
     expect(safeCell(-5)).toBe(-5);
@@ -99,7 +122,8 @@ describe("Cálculos de conferência", () => {
 });
 
 describe("Filtro por carreta / manifesto", () => {
-  const sheet = matrixToSheet([H,
+  const sheet = matrixToSheet([
+    H,
     ["CP273732", "A1", "SP", "10", "8"],
     ["CP273732", "A1", "SP", "10", "8"],
     ["CP273732", "B1", "SP", "5", "5"],

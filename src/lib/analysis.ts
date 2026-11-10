@@ -13,12 +13,7 @@ export const FIELD_LABELS: Record<Field, string> = {
 export const REQUIRED_FIELDS: Field[] = ["cte", "destino", "vols", "lidos"];
 
 export type Status =
-  | "COMPLETO"
-  | "INCOMPLETO"
-  | "SEM_LEITURA"
-  | "EXCEDENTE"
-  | "INVALIDO"
-  | "CONFLITO";
+  "COMPLETO" | "INCOMPLETO" | "SEM_LEITURA" | "EXCEDENTE" | "INVALIDO" | "CONFLITO";
 
 export const STATUS_LABELS: Record<Status, string> = {
   COMPLETO: "Completo",
@@ -143,7 +138,10 @@ export const DEFAULT_SP_VALUES = ["SAO", "SP", "SAO PAULO", "SÃO PAULO"];
 
 /** Extracts the destination from a route like "CPQ/SAO" (last segment). Plain values pass through. */
 export function destinoFromTrecho(v: unknown): string {
-  const parts = String(v ?? "").split(/[/\\>]|\s-\s/).map((p) => p.trim()).filter(Boolean);
+  const parts = String(v ?? "")
+    .split(/[/\\>]|\s-\s/)
+    .map((p) => p.trim())
+    .filter(Boolean);
   return parts.length ? parts[parts.length - 1]! : "";
 }
 
@@ -204,7 +202,8 @@ export function analyze(
   // Filter by exact manifest, or by origin prefix (group of manifests). Grouping never sums duplicates:
   // records of the same CT-e are still consolidated below.
   const inView = (r: SourceRecord) =>
-    (manifesto === null || r.manifesto === manifesto) && (prefix === null || manifestPrefix(r.manifesto) === prefix);
+    (manifesto === null || r.manifesto === manifesto) &&
+    (prefix === null || manifestPrefix(r.manifesto) === prefix);
   const filtered = manifesto !== null || prefix !== null;
   const records = filtered ? all.filter(inView) : all;
   // For per-manifest view: which other manifests carry the same CT-e (SP only)
@@ -270,7 +269,9 @@ function analyzeRecords(
       invalid.forEach((r) => issues.push(`Linha ${r.line}: ${r.errors.join(", ")}`));
     } else if (pairs.size > 1) {
       status = "CONFLITO";
-      issues.push(`${pairs.size} combinações diferentes de VOLS/LIDOS entre ${recs.length} registros`);
+      issues.push(
+        `${pairs.size} combinações diferentes de VOLS/LIDOS entre ${recs.length} registros`,
+      );
     } else {
       vols = valid[0]!.vols!;
       lidos = valid[0]!.lidos!;
@@ -278,7 +279,10 @@ function analyzeRecords(
     }
     if (status === "EXCEDENTE") issues.push("Anomalia: leitura acima do previsto");
     const others = otherMan.get(cte);
-    if (others) issues.push(`Também presente em: ${[...others].join(", ")} — leitura pode não ser exclusiva desta carreta`);
+    if (others)
+      issues.push(
+        `Também presente em: ${[...others].join(", ")} — leitura pode não ser exclusiva desta carreta`,
+      );
 
     ctes.push({
       cte,
@@ -338,10 +342,18 @@ function analyzeRecords(
 // ---------- Manifests / origins ----------
 
 export type OriginMap = Record<string, string>;
-export const DEFAULT_ORIGINS: OriginMap = { CP: "Campinas", RJ: "Rio de Janeiro", ES: "Espírito Santo" };
+export const DEFAULT_ORIGINS: OriginMap = {
+  CP: "Campinas",
+  RJ: "Rio de Janeiro",
+  ES: "Espírito Santo",
+};
 export const UNKNOWN_ORIGIN = "Origem não cadastrada";
 
-export const manifestPrefix = (code: string) => (code.trim().toUpperCase().match(/^[A-Z]+/)?.[0] ?? "");
+export const manifestPrefix = (code: string) =>
+  code
+    .trim()
+    .toUpperCase()
+    .match(/^[A-Z]+/)?.[0] ?? "";
 
 export function originOf(code: string, origins: OriginMap): string {
   const p = manifestPrefix(code);
@@ -357,13 +369,16 @@ export function originOf(code: string, origins: OriginMap): string {
 export function listManifestos(sheet: Sheet, mapping: Mapping, spValues: string[]): string[] {
   if (!mapping.manifesto) return [];
   const set = new Set<string>();
-  for (const r of buildRecords(sheet, mapping, spValues)) if (r.isSP && r.manifesto) set.add(r.manifesto);
+  for (const r of buildRecords(sheet, mapping, spValues))
+    if (r.isSP && r.manifesto) set.add(r.manifesto);
   return [...set].sort((a, b) => a.localeCompare(b));
 }
 
 /** Distinct origin prefixes among SP manifests. */
 export function listPrefixes(manifestos: string[]): string[] {
-  return [...new Set(manifestos.map(manifestPrefix).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  return [...new Set(manifestos.map(manifestPrefix).filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b),
+  );
 }
 
 export interface ManifestRow {
@@ -372,7 +387,13 @@ export interface ManifestRow {
   summary: Summary;
 }
 
-export function compareManifestos(sheet: Sheet, mapping: Mapping, spValues: string[], resolutions: Resolutions, origins: OriginMap): ManifestRow[] {
+export function compareManifestos(
+  sheet: Sheet,
+  mapping: Mapping,
+  spValues: string[],
+  resolutions: Resolutions,
+  origins: OriginMap,
+): ManifestRow[] {
   if (!mapping.manifesto) return [];
   const all = buildRecords(sheet, mapping, spValues);
   const byManifest = new Map<string, SourceRecord[]>();
@@ -413,7 +434,9 @@ export function compareManifestos(sheet: Sheet, mapping: Mapping, spValues: stri
 
 /** Turns a matrix of cell strings into a Sheet, detecting the header row. */
 export function matrixToSheet(matrix: unknown[][], sourceRowNumbers?: number[]): Sheet {
-  const rows = matrix.map((r) => (r ?? []).map((c) => (c === null || c === undefined ? "" : String(c))));
+  const rows = matrix.map((r) =>
+    (r ?? []).map((c) => (c === null || c === undefined ? "" : String(c))),
+  );
   let headerIdx = 0;
   let best = -1;
   for (let i = 0, nonEmpty = 0; i < rows.length && nonEmpty < 30; i++) {
@@ -422,7 +445,8 @@ export function matrixToSheet(matrix: unknown[][], sourceRowNumbers?: number[]):
     nonEmpty++;
     if (cells.length < 2) continue;
     const { candidates } = autoMap(cells);
-    const score = REQUIRED_FIELDS.filter((f) => candidates[f].length).length * 10 + cells.length * 0.01;
+    const score =
+      REQUIRED_FIELDS.filter((f) => candidates[f].length).length * 10 + cells.length * 0.01;
     if (score > best) {
       best = score;
       headerIdx = i;
@@ -460,4 +484,6 @@ export function matrixToSheet(matrix: unknown[][], sourceRowNumbers?: number[]):
 // ---------- Formatting ----------
 export const fmtInt = (n: number | null) => (n === null ? "—" : n.toLocaleString("pt-BR"));
 export const fmtPct = (n: number | null) =>
-  n === null ? "—" : `${n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
+  n === null
+    ? "—"
+    : `${n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
