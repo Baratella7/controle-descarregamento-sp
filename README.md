@@ -1,29 +1,46 @@
-# Welcome to your Lovable project
+# Controle de Descarregamento — SP
 
-This project was built with [Lovable](https://lovable.dev).
+Sistema web para conferência de descarga de carga com destino a São Paulo (SAO/SP). Compara os volumes previstos por CT-e com os volumes lidos na descarga e aponta faltas, excessos e conflitos.
 
-## Build with Lovable
+## O que o sistema faz
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+- **Importar Planilha**: lê arquivos `.xlsx`, `.xls` ou `.csv` (padrão até 25 MB / 200.000 linhas, ajustável até 1.000.000) e reconhece as colunas automaticamente (CT-e, Trecho, Manifesto/MAN, volumes previstos e lidos).
+- **Destino pelo Trecho**: o destino é o último segmento do trecho (ex.: `CPQ/SAO` → `SAO`).
+- **Origem pelo Manifesto**: a origem é o prefixo inicial do manifesto (ex.: `SJ001372E` → `SJ`, `CP…` → Campinas).
+- **Dashboard**: CT-es únicos, completos, incompletos, volumes previstos, lidos, faltantes e percentual de conferência.
+- **Conferência**: tabela de CT-es com manifesto, origem e situação.
+- **Divergências**: CT-es incompletos, sem leitura, com leitura excedente ou com leituras conflitantes.
+- **Auditoria**: resolução manual de conflitos e duplicatas.
+- **Por Carreta**: filtro por origem/manifesto, comparativo, gráfico e exportações.
+- **Exportações** em Excel/CSV com proteção contra injeção de fórmulas.
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+## Privacidade
 
-## Development
+A planilha é processada **somente no navegador**. Os dados operacionais ficam na memória da página e não são enviados nem salvos. Ao recarregar a página é preciso importar novamente. Apenas configurações (destinos equivalentes a SP, nomes de origens) ficam no navegador.
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+## Como usar
+
+1. Abra **Importar Planilha** e selecione o arquivo.
+2. Confira o mapeamento das colunas e clique em **Analisar descarregamento**.
+3. Veja os resultados no **Dashboard**, **Conferência** e **Divergências**.
+4. Use o filtro de origem ou a página **Por Carreta** para analisar cada carreta.
+5. Resolva conflitos em **Auditoria** e exporte os relatórios.
+
+## Rodando localmente
+
+Requer Node.js (ou Bun).
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
+npm install
 npm run dev
 ```
 
-## Built with
+Testes das regras de cálculo:
 
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
+```sh
+npx vitest run
+```
+
+## Tecnologias
+
+React 19, TanStack Start, Vite, Tailwind CSS v4, SheetJS (leitura de planilhas).
