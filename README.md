@@ -66,6 +66,23 @@ Para outras hospedagens, configure um preset compatível do Nitro pela variável
 Os arquivos gerados são específicos do preset e devem ser publicados conforme a
 hospedagem escolhida.
 
+## Publicação na Vercel
+
+Importe este repositório na Vercel usando Node.js 24.x e a raiz do projeto.
+O arquivo `vercel.json` configura a instalação com o lockfile do Bun e o build
+com o preset `vercel` do Nitro, que gera a Build Output API em `.vercel/output`.
+Mantenha o Output Directory sem substituição manual e não use `dist` como uma
+pasta de site estático: a aplicação utiliza TanStack Start com SSR.
+
+Para verificar esse build localmente:
+
+```sh
+NITRO_PRESET=vercel npm run build
+```
+
+A importação e a análise dos arquivos continuam ocorrendo somente no navegador.
+A verificação de lint exige zero erros e zero avisos.
+
 ## Tecnologias
 
 React 19, TanStack Start, Vite, Tailwind CSS v4, SheetJS (leitura de planilhas).

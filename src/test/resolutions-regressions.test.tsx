@@ -1,7 +1,8 @@
 import { act, cleanup, renderHook } from "@testing-library/react";
 import { afterEach, expect, it } from "vitest";
 import { autoMap, matrixToSheet } from "@/lib/analysis";
-import { DataProvider, useData } from "@/lib/store";
+import { DataProvider } from "@/lib/store";
+import { useData } from "@/lib/data-context";
 
 afterEach(cleanup);
 

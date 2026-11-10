@@ -7,7 +7,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@tanstack/react-router")>()),
   useNavigate: () => mocks.navigate,
 }));
-vi.mock("@/lib/store", () => ({
+vi.mock("@/lib/data-context", () => ({
   useData: () => ({ setLoaded: mocks.setLoaded, spValues: ["SAO"], setSpValues: vi.fn() }),
 }));
 vi.mock("@/lib/files", async (importOriginal) => ({

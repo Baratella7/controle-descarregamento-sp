@@ -46,7 +46,13 @@ export async function readWorkbook(file: File): Promise<Workbook> {
   let wb: XLSX.WorkBook;
   try {
     // No formulas, no HTML, no macros: values only.
-    wb = XLSX.read(buf, { type: "array", cellFormula: false, cellHTML: false, bookVBA: false, cellStyles: false });
+    wb = XLSX.read(buf, {
+      type: "array",
+      cellFormula: false,
+      cellHTML: false,
+      bookVBA: false,
+      cellStyles: false,
+    });
   } catch {
     throw new FileError("Não foi possível ler o arquivo. Ele pode estar corrompido ou protegido.");
   }
@@ -79,7 +85,12 @@ export function safeCell(v: unknown): string | number {
   return /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
 }
 
-export function exportRows(filename: string, headers: string[], rows: unknown[][], format: "xlsx" | "csv") {
+export function exportRows(
+  filename: string,
+  headers: string[],
+  rows: unknown[][],
+  format: "xlsx" | "csv",
+) {
   const aoa = [headers.map(safeCell), ...rows.map((r) => r.map(safeCell))];
   let blob: Blob;
   if (format === "csv") {
@@ -95,7 +106,9 @@ export function exportRows(filename: string, headers: string[], rows: unknown[][
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Relatório");
     const out = XLSX.write(wb, { type: "array", bookType: "xlsx" });
-    blob = new Blob([out], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    blob = new Blob([out], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
   }
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
