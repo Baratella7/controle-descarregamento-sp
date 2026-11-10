@@ -72,7 +72,7 @@ function Page() {
     <>
       <PageHeader
         title="Relatório de Descarregamento por Carreta"
-        subtitle="Resultados por manifesto, somente registros com destino SP."
+        subtitle="Resultados por manifesto dos registros selecionados pelo filtro de leitura."
         actions={
           <>
             <ExportButton

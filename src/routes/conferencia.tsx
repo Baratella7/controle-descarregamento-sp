@@ -32,7 +32,7 @@ function Page() {
     <>
       <PageHeader
         title="Conferência de CT-es"
-        subtitle="Todos os CT-es com destino SP, incluindo os completos."
+        subtitle="Todos os CT-es selecionados pelo filtro de leitura, incluindo os completos."
         actions={
           analysis && (
             <>

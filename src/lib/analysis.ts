@@ -5,7 +5,7 @@ export type Mapping = Record<Field, string | null>;
 
 export const FIELD_LABELS: Record<Field, string> = {
   cte: "Código do CT-e",
-  destino: "Trecho (destino após a barra)",
+  destino: "Leitura / destino (coluna de filtro)",
   manifesto: "Manifesto",
   vols: "VOLS (previstos)",
   lidos: "LIDOS (lidos)",
@@ -92,7 +92,14 @@ export const normalize = (s: unknown) =>
 
 const PATTERNS: Record<Field, RegExp[]> = {
   cte: [/^CT-?E$/, /^(N(UM(ERO)?|O|º)?\.? ?)?CT-?E/, /CT-?E/, /CONHEC/],
-  destino: [/^TRECHO$/, /TRECHO/, /^(FILIAL )?DEST(INO)?$/, /DEST/, /^FIL(IAL)? ?DEST/],
+  destino: [
+    /^LEITURA$/,
+    /^TRECHO$/,
+    /TRECHO/,
+    /^(FILIAL )?DEST(INO)?$/,
+    /DEST/,
+    /^FIL(IAL)? ?DEST/,
+  ],
   manifesto: [/^MANIF(ESTO)?$/, /^MAN$/, /MANIF/, /^MDF-?E/],
   vols: [/^VOLS$/, /^VOL(UME)?S?( PREVISTOS?)?$/],
   lidos: [/^LIDOS$/, /^(VOL(UME)?S? )?LIDOS?$/],
@@ -145,17 +152,25 @@ export function destinoFromTrecho(v: unknown): string {
   return parts.length ? parts[parts.length - 1]! : "";
 }
 
+export const findReadingColumn = (headers: string[]) =>
+  headers.find((header) => normalize(header) === "LEITURA");
+
 export function buildRecords(sheet: Sheet, mapping: Mapping, spValues: string[]): SourceRecord[] {
   const sp = new Set(spValues.map(normalize).filter(Boolean));
+  const readingColumn = findReadingColumn(sheet.headers);
   return sheet.rows.map((row, i) => {
     const cte = String(row[mapping.cte!] ?? "").trim();
-    const destino = destinoFromTrecho(row[mapping.destino!]);
+    // Leitura is the unloading unit, independent of the route's destination.
+    // Retain legacy route mapping only for files without this column.
+    const destino = readingColumn
+      ? String(row[readingColumn] ?? "").trim()
+      : destinoFromTrecho(row[mapping.destino!]);
     const manifesto = mapping.manifesto ? String(row[mapping.manifesto] ?? "").trim() : "";
     const vols = parseVolume(row[mapping.vols!]);
     const lidos = parseVolume(row[mapping.lidos!]);
     const errors: string[] = [];
     if (!cte) errors.push("Código do CT-e ausente");
-    if (!destino) errors.push("Destino ausente");
+    if (!destino) errors.push(readingColumn ? "Leitura ausente" : "Destino ausente");
     if (vols === null) errors.push("VOLS ausente");
     else if (Number.isNaN(vols)) errors.push("VOLS não numérico");
     else if (vols < 0) errors.push("VOLS negativo");
@@ -173,7 +188,7 @@ export function buildRecords(sheet: Sheet, mapping: Mapping, spValues: string[])
       vols,
       lidos,
       errors,
-      isSP: sp.has(normalize(destino)),
+      isSP: readingColumn ? normalize(destino) === "SAO" : sp.has(normalize(destino)),
     };
   });
 }

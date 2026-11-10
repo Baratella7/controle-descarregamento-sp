@@ -30,7 +30,12 @@ export function ManifestBar() {
             </div>
             <div className="text-xs text-muted-foreground">
               Origem: <span className="text-foreground">{prefixo ? label(prefixo) : "Todas"}</span>{" "}
-              · Destino: <span className="text-foreground">SP</span>
+              · Filtro:{" "}
+              <span className="text-foreground">
+                {loaded?.sheet.headers.some((h) => h.trim().toLowerCase() === "leitura")
+                  ? "leitura = SAO"
+                  : "destino SP"}
+              </span>
             </div>
           </div>
         </div>

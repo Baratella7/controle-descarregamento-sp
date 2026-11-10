@@ -125,7 +125,7 @@ function Dashboard() {
     <>
       <PageHeader
         title="Dashboard"
-        subtitle="Somente CT-es com destino SP, consolidados entre manifestos."
+        subtitle="CT-es selecionados pelo filtro de leitura, consolidados entre manifestos."
         actions={
           <ExportButton label="Exportar resumo" onExport={(f) => exportSummary(analysis, f)} />
         }

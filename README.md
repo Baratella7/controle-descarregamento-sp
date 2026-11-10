@@ -2,14 +2,15 @@
 
 Desenvolvido e mantido por **Baratella Dev**.
 
-Sistema web para conferência de descarga de carga com destino a São Paulo (SAO/SP). Compara os volumes previstos por CT-e com os volumes lidos na descarga e aponta faltas, excessos e conflitos.
+Sistema web para conferência de descarga de carga na unidade SAO. Compara os volumes previstos por CT-e com os volumes lidos na descarga e aponta faltas, excessos e conflitos.
 
-O objetivo é conferir todo volume de carga com destino a São Paulo na descarga.
+O objetivo é conferir os volumes descarregados na unidade SAO, independentemente do destino final do trecho.
 
 ## O que o sistema faz
 
 - **Importar Planilha**: lê arquivos `.xlsx`, `.xls` ou `.csv` (padrão até 25 MB / 200.000 linhas, ajustável até 1.000.000) e reconhece as colunas automaticamente (CT-e, Trecho, Manifesto/MAN, volumes previstos e lidos).
-- **Destino pelo Trecho**: o destino é o último segmento do trecho (ex.: `CPQ/SAO` → `SAO`).
+- **Filtro pela leitura**: quando existe a coluna `leitura`, inclui somente `SAO`, mantendo todos os trechos dessas linhas (inclusive `VIX/SP2`, `VIX/SP3` ou outros destinos). O trecho não é usado para excluir registros. Essa coluna tem prioridade automática sobre `fstrechoid`, `Trecho` e `Destino`.
+- **Compatibilidade**: arquivos antigos sem a coluna `leitura` mantêm o filtro configurável pelo destino/último segmento do trecho.
 - **Origem pelo Manifesto**: a origem é o prefixo inicial do manifesto (ex.: `SJ001372E` → `SJ`, `CP…` → Campinas).
 - **Dashboard**: CT-es únicos, completos, incompletos, volumes previstos, lidos, faltantes e percentual de conferência.
 - **Conferência**: tabela de CT-es com manifesto, origem e situação.

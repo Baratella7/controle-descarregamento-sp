@@ -57,8 +57,8 @@ function Page() {
       />
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard label="Linhas importadas" value={fmtInt(s.totalLinhas)} tone="primary" />
-        <StatCard label="Registros destino SP" value={fmtInt(s.linhasSP)} tone="success" />
-        <StatCard label="Outras filiais (ignorados)" value={fmtInt(s.linhasOutras)} />
+        <StatCard label="Registros selecionados" value={fmtInt(s.linhasSP)} tone="success" />
+        <StatCard label="Fora do filtro (ignorados)" value={fmtInt(s.linhasOutras)} />
         <StatCard label="CT-es únicos" value={fmtInt(s.ctesUnicos)} />
         <StatCard
           label="Registros duplicados"

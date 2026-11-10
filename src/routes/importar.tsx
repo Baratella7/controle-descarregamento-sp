@@ -17,6 +17,7 @@ import { useData } from "@/lib/data-context";
 import { FileError, LIMITS, readWorkbook, type Workbook } from "@/lib/files";
 import {
   autoMap,
+  findReadingColumn,
   FIELD_LABELS,
   missingFields,
   REQUIRED_FIELDS,
@@ -100,6 +101,7 @@ function Page() {
     setAmbiguous([]);
   };
 
+  const readingColumn = sheet ? findReadingColumn(sheet.headers) : undefined;
   const missing = sheet && mapping ? missingFields(mapping, sheet.headers) : [];
   const limitError =
     sheet && sheet.rows.length > maxRows
@@ -107,16 +109,18 @@ function Page() {
       : null;
   const confirm = () => {
     if (!file || !sheet || !mapping || missing.length || error || limitError) return;
-    const values = sp
-      .split(/[,;\n]/)
-      .map((v) => v.trim())
-      .filter(Boolean)
-      .slice(0, 20);
+    const values = readingColumn
+      ? ["SAO"]
+      : sp
+          .split(/[,;\n]/)
+          .map((v) => v.trim())
+          .filter(Boolean)
+          .slice(0, 20);
     if (!values.length) {
       toast.error("Informe ao menos um valor de destino equivalente a SP.");
       return;
     }
-    setSpValues(values);
+    if (!readingColumn) setSpValues(values);
     setLoaded({ fileName: file.name, fileSize: file.size, sheetName, sheet, mapping });
     toast.success("Análise concluída.");
     nav({ to: "/" });
@@ -241,6 +245,7 @@ function Page() {
                     }
                   >
                     <Select
+                      disabled={f === "destino" && !!readingColumn}
                       value={mapping[f] ?? NONE}
                       onValueChange={(v) => setMapping({ ...mapping, [f]: v === NONE ? null : v })}
                     >
@@ -270,13 +275,20 @@ function Page() {
                 ))}
               </div>
             </div>
-            <Field label="Valores de destino equivalentes a SP">
-              <Input value={sp} onChange={(e) => setSp(e.target.value)} maxLength={200} />
-              <p className="mt-1 text-xs text-muted-foreground">
-                Separe por vírgula. Comparação sem acentos e maiúsculas. O prefixo do CT-e não é
-                usado.
-              </p>
-            </Field>
+            {readingColumn ? (
+              <div className="rounded-md border bg-accent p-3 text-sm text-accent-foreground">
+                Filtro aplicado: leitura = SAO. Todos os trechos dessas linhas são mantidos,
+                inclusive os que não terminam em SAO.
+              </div>
+            ) : (
+              <Field label="Valores de destino equivalentes a SP">
+                <Input value={sp} onChange={(e) => setSp(e.target.value)} maxLength={200} />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Separe por vírgula. Comparação sem acentos e maiúsculas. O prefixo do CT-e não é
+                  usado.
+                </p>
+              </Field>
+            )}
             <Field label="Limite de linhas">
               <Input
                 type="number"

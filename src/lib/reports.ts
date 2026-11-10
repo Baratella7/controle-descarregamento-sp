@@ -33,8 +33,8 @@ export function exportSummary(a: Analysis, f: "xlsx" | "csv") {
   const s = a.summary;
   const rows: [string, string | number][] = [
     ["Linhas importadas", s.totalLinhas],
-    ["Registros destino SP", s.linhasSP],
-    ["Registros outras filiais (desconsiderados)", s.linhasOutras],
+    ["Registros selecionados", s.linhasSP],
+    ["Registros fora do filtro (desconsiderados)", s.linhasOutras],
     ["Registros sem destino", s.linhasSemDestino],
     ["CT-es únicos SP", s.ctesUnicos],
     ["Completos", s.completos],
