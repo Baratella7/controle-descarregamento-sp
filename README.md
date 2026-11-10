@@ -1,6 +1,10 @@
-# Controle de Descarregamento — SP
+# Controle de Descarregamento SP
+
+Desenvolvido e mantido por **Baratella Dev**.
 
 Sistema web para conferência de descarga de carga com destino a São Paulo (SAO/SP). Compara os volumes previstos por CT-e com os volumes lidos na descarga e aponta faltas, excessos e conflitos.
+
+O objetivo é conferir todo volume de carga com destino a São Paulo na descarga.
 
 ## O que o sistema faz
 
@@ -28,18 +32,39 @@ A planilha é processada **somente no navegador**. Os dados operacionais ficam n
 
 ## Rodando localmente
 
-Requer Node.js (ou Bun).
+Requer Node.js 22.12+ (ou 24+) e Bun para instalar as versões fixadas em `bun.lock`.
 
 ```sh
-npm install
+bun install --frozen-lockfile
 npm run dev
 ```
 
-Testes das regras de cálculo:
+O servidor de desenvolvimento atende em `http://localhost:8080`.
+
+Verificações:
 
 ```sh
-npx vitest run
+npm test
+npm run lint
+npx tsc --noEmit
+npm run build
 ```
+
+## Build e execução em produção
+
+A configuração usa diretamente os plugins oficiais do Vite, React, TanStack Start,
+Tailwind CSS e Nitro. O build padrão gera um servidor Node.js independente:
+
+```sh
+npm run build
+node .output/server/index.mjs
+```
+
+O servidor usa a porta 3000 por padrão, configurável pela variável `PORT`.
+Para outras hospedagens, configure um preset compatível do Nitro pela variável
+`NITRO_PRESET` ao compilar (por exemplo, `cloudflare-module` para Cloudflare Workers).
+Os arquivos gerados são específicos do preset e devem ser publicados conforme a
+hospedagem escolhida.
 
 ## Tecnologias
 
