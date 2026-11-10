@@ -29,7 +29,7 @@ export const STATUS_LABELS: Record<Status, string> = {
   CONFLITO: "Duplicidade com conflito",
 };
 
-export type Sheet = { headers: string[]; rows: Record<string, string>[] };
+export type Sheet = { headers: string[]; rows: Record<string, string>[]; rowNumbers?: number[] };
 
 export interface SourceRecord {
   line: number; // line number in the original file (1-based, incl. header)
@@ -167,7 +167,16 @@ export function buildRecords(sheet: Sheet, mapping: Mapping, spValues: string[])
     else if (Number.isNaN(lidos)) errors.push("LIDOS não numérico");
     else if (lidos < 0) errors.push("LIDOS negativo");
     else if (!Number.isInteger(lidos)) errors.push("LIDOS não inteiro");
-    return { line: i + 2, cte, destino, manifesto, vols, lidos, errors, isSP: sp.has(normalize(destino)) };
+    return {
+      line: sheet.rowNumbers?.[i] ?? i + 2,
+      cte,
+      destino,
+      manifesto,
+      vols,
+      lidos,
+      errors,
+      isSP: sp.has(normalize(destino)),
+    };
   });
 }
 
@@ -198,8 +207,6 @@ export function analyze(
     (manifesto === null || r.manifesto === manifesto) && (prefix === null || manifestPrefix(r.manifesto) === prefix);
   const filtered = manifesto !== null || prefix !== null;
   const records = filtered ? all.filter(inView) : all;
-  const spRecords = records.filter((r) => r.isSP);
-  const invalidRecords = records.filter((r) => !r.isSP && !r.destino);
   // For per-manifest view: which other manifests carry the same CT-e (SP only)
   const otherMan = new Map<string, Set<string>>();
   if (filtered)
@@ -209,6 +216,17 @@ export function analyze(
         s.add(r.manifesto || "(sem manifesto)");
         otherMan.set(r.cte, s);
       }
+  return analyzeRecords(records, resolutions, otherMan);
+}
+
+// Reuse validated records across manifest summaries instead of reparsing the workbook.
+function analyzeRecords(
+  records: SourceRecord[],
+  resolutions: Resolutions,
+  otherMan: Map<string, Set<string>>,
+): Analysis {
+  const spRecords = records.filter((r) => r.isSP);
+  const invalidRecords = records.filter((r) => !r.isSP && !r.destino);
   const groups = new Map<string, SourceRecord[]>();
   for (const r of spRecords) {
     if (!r.cte) {
@@ -227,7 +245,15 @@ export function analyze(
     const invalid = recs.filter((r) => r.errors.length);
     const valid = recs.filter((r) => !r.errors.length);
     const pairs = new Set(valid.map((r) => `${r.vols}|${r.lidos}`));
-    const res = resolutions[cte];
+    const candidate = Object.hasOwn(resolutions, cte) ? resolutions[cte] : undefined;
+    const res =
+      candidate &&
+      Number.isSafeInteger(candidate.vols) &&
+      candidate.vols > 0 &&
+      Number.isSafeInteger(candidate.lidos) &&
+      candidate.lidos >= 0
+        ? candidate
+        : undefined;
     let vols: number | null = null;
     let lidos: number | null = null;
     let status: Status;
@@ -347,22 +373,53 @@ export interface ManifestRow {
 }
 
 export function compareManifestos(sheet: Sheet, mapping: Mapping, spValues: string[], resolutions: Resolutions, origins: OriginMap): ManifestRow[] {
-  return listManifestos(sheet, mapping, spValues).map((m) => ({
-    manifesto: m,
-    origem: originOf(m, origins),
-    summary: analyze(sheet, mapping, spValues, resolutions, m).summary,
-  }));
+  if (!mapping.manifesto) return [];
+  const all = buildRecords(sheet, mapping, spValues);
+  const byManifest = new Map<string, SourceRecord[]>();
+  const manifestsWithSP = new Set<string>();
+  const byCte = new Map<string, Set<string>>();
+  for (const record of all) {
+    const group = byManifest.get(record.manifesto);
+    if (group) group.push(record);
+    else byManifest.set(record.manifesto, [record]);
+    if (!record.isSP) continue;
+    if (record.manifesto) manifestsWithSP.add(record.manifesto);
+    if (!record.cte) continue;
+    const manifests = byCte.get(record.cte) ?? new Set<string>();
+    manifests.add(record.manifesto);
+    byCte.set(record.cte, manifests);
+  }
+  return [...manifestsWithSP]
+    .sort((a, b) => a.localeCompare(b))
+    .map((manifesto) => {
+      const records = byManifest.get(manifesto)!;
+      const otherMan = new Map<string, Set<string>>();
+      for (const record of records) {
+        if (!record.isSP || !record.cte || otherMan.has(record.cte)) continue;
+        const others = [...byCte.get(record.cte)!]
+          .filter((m) => m !== manifesto)
+          .map((m) => m || "(sem manifesto)");
+        if (others.length) otherMan.set(record.cte, new Set(others));
+      }
+      return {
+        manifesto,
+        origem: originOf(manifesto, origins),
+        summary: analyzeRecords(records, resolutions, otherMan).summary,
+      };
+    });
 }
 
 // ---------- Table extraction ----------
 
 /** Turns a matrix of cell strings into a Sheet, detecting the header row. */
-export function matrixToSheet(matrix: unknown[][]): Sheet {
+export function matrixToSheet(matrix: unknown[][], sourceRowNumbers?: number[]): Sheet {
   const rows = matrix.map((r) => (r ?? []).map((c) => (c === null || c === undefined ? "" : String(c))));
   let headerIdx = 0;
   let best = -1;
-  for (let i = 0; i < Math.min(rows.length, 30); i++) {
+  for (let i = 0, nonEmpty = 0; i < rows.length && nonEmpty < 30; i++) {
     const cells = rows[i]!.filter((c) => c.trim() !== "");
+    if (!cells.length) continue;
+    nonEmpty++;
     if (cells.length < 2) continue;
     const { candidates } = autoMap(cells);
     const score = REQUIRED_FIELDS.filter((f) => candidates[f].length).length * 10 + cells.length * 0.01;
@@ -372,19 +429,32 @@ export function matrixToSheet(matrix: unknown[][]): Sheet {
     }
   }
   const raw: string[] = rows[headerIdx] ?? [];
-  const seen = new Map<string, number>();
-  const headers = raw.map((h, i) => {
-    let name = h.trim() || `Coluna ${i + 1}`;
-    const n = (seen.get(name) ?? 0) + 1;
-    seen.set(name, n);
-    if (n > 1) name = `${name} (${n})`;
+  // Reserve existing names, including suffixes, so no column can overwrite another.
+  const names = raw.map((h, i) => h.trim() || `Coluna ${i + 1}`);
+  const reserved = new Set(names);
+  const used = new Set<string>();
+  const nextSuffix = new Map<string, number>();
+  const headers = names.map((base) => {
+    let name = base;
+    let suffix = nextSuffix.get(base) ?? 2;
+    while (used.has(name)) {
+      do {
+        name = `${base} (${suffix++})`;
+      } while (reserved.has(name) || used.has(name));
+    }
+    nextSuffix.set(base, suffix);
+    used.add(name);
     return name;
   });
-  const data = rows
-    .slice(headerIdx + 1)
-    .filter((r) => r.some((c) => c.trim() !== ""))
-    .map((r) => Object.fromEntries(headers.map((h, i) => [h, r[i] ?? ""])));
-  return { headers, rows: data };
+  const data: Record<string, string>[] = [];
+  const rowNumbers: number[] = [];
+  for (let i = headerIdx + 1; i < rows.length; i++) {
+    const row = rows[i]!;
+    if (!row.some((c) => c.trim() !== "")) continue;
+    data.push(Object.fromEntries(headers.map((h, col) => [h, row[col] ?? ""])));
+    rowNumbers.push(sourceRowNumbers?.[i] ?? i + 1);
+  }
+  return { headers, rows: data, rowNumbers };
 }
 
 // ---------- Formatting ----------

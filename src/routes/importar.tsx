@@ -47,7 +47,6 @@ function Page() {
 
   const loadSheet = (w: Workbook, name: string) => {
     const s = w.getSheet(name);
-    if (s.rows.length > maxRows) throw new FileError(`A aba tem ${s.rows.length.toLocaleString("pt-BR")} linhas, acima do limite de ${maxRows.toLocaleString("pt-BR")}.`);
     const { mapping: m, candidates } = autoMap(s.headers);
     setSheetName(name);
     setSheet(s);
@@ -76,8 +75,12 @@ function Page() {
   };
 
   const missing = sheet && mapping ? missingFields(mapping, sheet.headers) : [];
+  const limitError =
+    sheet && sheet.rows.length > maxRows
+      ? `A aba tem ${sheet.rows.length.toLocaleString("pt-BR")} linhas, acima do limite de ${maxRows.toLocaleString("pt-BR")}. Ajuste o limite de linhas abaixo (máximo de 1.000.000).`
+      : null;
   const confirm = () => {
-    if (!file || !sheet || !mapping || missing.length) return;
+    if (!file || !sheet || !mapping || missing.length || error || limitError) return;
     const values = sp.split(/[,;\n]/).map((v) => v.trim()).filter(Boolean).slice(0, 20);
     if (!values.length) { toast.error("Informe ao menos um valor de destino equivalente a SP."); return; }
     setSpValues(values);
@@ -121,9 +124,9 @@ function Page() {
         </div>
       )}
 
-      {error && (
+      {(error || limitError) && (
         <div className="mt-4 flex items-center gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
-          <AlertTriangle className="size-4" /> {error}
+          <AlertTriangle className="size-4" /> {error || limitError}
         </div>
       )}
 
@@ -169,7 +172,13 @@ function Page() {
             ) : (
               <div className="flex items-center gap-2 text-sm text-success"><CheckCircle2 className="size-4" /> Estrutura válida.</div>
             )}
-            <Button className="w-full" disabled={missing.length > 0} onClick={confirm}>Analisar descarregamento</Button>
+            <Button
+              className="w-full"
+              disabled={missing.length > 0 || !!error || !!limitError}
+              onClick={confirm}
+            >
+              Analisar descarregamento
+            </Button>
           </div>
 
           <div className="min-w-0 rounded-lg border bg-card">
